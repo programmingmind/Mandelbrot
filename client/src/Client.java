@@ -10,6 +10,8 @@ public class Client {
 		// if no work or if work is invalid, get work
 
 		// do work (in background)
+		// Thread worker = new Thread(new Worker());
+		// worker.start();
 
 		// send work
 
