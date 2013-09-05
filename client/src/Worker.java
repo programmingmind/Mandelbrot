@@ -6,8 +6,21 @@ public class Worker implements Runnable {
 	private final int count;
 	private long[] iters;
 
+	private final boolean valid;
+
 	private static final BigDecimal FOUR = new BigDecimal(4.00);
 	private static final BigDecimal TWO = new BigDecimal(2.00);
+
+	public Worker(Object work) {
+
+		// TODO once I setup the JSONarray object properly then I'll actually attempt to parse it
+
+		maxIt = 0;
+		prevMaxIt = 0;
+		count = 0;
+
+		valid = maxIt > 0 && prevMaxIt > 0 && count > 0;
+	}
 
 	public Worker(BigDecimal startX, BigDecimal endX, BigDecimal y, BigDecimal precision, long maxIt, long prevMaxIt, long[] prevIts) {
 		this.startX = startX;
@@ -28,6 +41,8 @@ public class Worker implements Runnable {
 					iters[i * 2] = prevIts[i];
 			}
 		}
+
+		valid = true;
 	}
 
 	public Worker(BigDecimal startX, BigDecimal endX, BigDecimal y, BigDecimal precision, long maxIt) {
@@ -36,19 +51,24 @@ public class Worker implements Runnable {
 
 	@Override
 	public void run() {
-		for (int ndx = 0; startX.compareTo(endX) < 0; startX = startX.add(precision), ndx++) {
-			if (iters[ndx] < prevMaxIt)
-				continue;
+		int ndx = -1;
+		if (valid) {
+			for (ndx = 0; !Thread.interrupted() && startX.compareTo(endX) < 0; startX = startX.add(precision), ndx++) {
+				if (iters[ndx] < prevMaxIt)
+					continue;
 
-			long it = 0;
-			BigDecimal x = startX, y = yVal;
-			while (it < maxIt && x.multiply(x).add(y.multiply(y)).compareTo(FOUR) < 0) {
-				BigDecimal Xtemp = x.multiply(x).subtract(y.multiply(y)).add(startX);
-				y = TWO.multiply(x).multiply(y).add(yVal);
-				x = Xtemp;
-				it++;
+				long it = 0;
+				BigDecimal x = startX, y = yVal;
+				while (it < maxIt && x.multiply(x).add(y.multiply(y)).compareTo(FOUR) < 0) {
+					BigDecimal Xtemp = x.multiply(x).subtract(y.multiply(y)).add(startX);
+					y = TWO.multiply(x).multiply(y).add(yVal);
+					x = Xtemp;
+					it++;
+				}
+				iters[ndx] = it;
 			}
-			iters[ndx] = it;
 		}
+
+		Client.onWorkFinished(this, ndx == count ? iters : null);
 	}
 }
